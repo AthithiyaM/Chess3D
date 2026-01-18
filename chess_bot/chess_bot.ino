@@ -1,12 +1,13 @@
 #include <Servo.h>
-#include <Stepper.h>
+// #include <Stepper.h>
 
-const int stepsPerRev = 2048;
+// const int stepsPerRev = 2048;
 
-Stepper z(stepsPerRev, 2, 7, 4, 12);
+// Stepper z(stepsPerRev, 2, 7, 4, 12);
 
 Servo x;
 Servo y;
+Servo z;
 
 // --------- MOTOR STATE ----------
 struct MotorState
@@ -52,7 +53,6 @@ void resetMotorsToA1()
 
 void applyMotorTarget(char axis, float targetDeg)
 {
-  // TODO: replace with actual motor control (servo.write, stepper steps, etc.)
   Serial.print("MOTOR ");
   Serial.print(axis);
   Serial.print(" -> ");
@@ -64,10 +64,11 @@ void applyMotorTarget(char axis, float targetDeg)
     moveMotorDegrees(y, my.posDeg, targetDeg, 30);
   else if (axis == 'Z')
   {
-    if (targetDeg == 0.0)
-      z.step(-512);
-    if (targetDeg == 90.00)
-      z.step(512);
+    moveMotorDegrees(z, mz.posDeg, targetDeg, 30);
+    // if (targetDeg == 0.0)
+    //   z.step(-512);
+    // if (targetDeg == 90.00)
+    //   z.step(512);
   }
 }
 
@@ -123,9 +124,7 @@ void handleRot(char axis, float deltaDeg)
 void setup()
 {
   Serial.begin(115200);
-  while (!Serial)
-  {
-  }
+  while (!Serial){}
 
   x.attach(9);
   y.attach(10);
@@ -145,7 +144,6 @@ void loop()
     if (line.length() == 0)
       return;
 
-    // For now just echo so you can see it
     Serial.print("RX: ");
     Serial.println(line);
 

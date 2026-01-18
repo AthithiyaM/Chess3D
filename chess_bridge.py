@@ -1,7 +1,7 @@
 import time
 import requests
 import chess
-import serial  # NEW
+import serial
 from collections import deque
 from threading import Event, Thread
 from flask import Flask, jsonify, request
@@ -18,7 +18,7 @@ MOVE_SERVER_HOST = "127.0.0.1"
 MOVE_SERVER_PORT = 5001
 
 # --- SERIAL CONFIG (edit these) ---
-SERIAL_PORT = "/dev/cu.usbserial-10"
+SERIAL_PORT = "/dev/cu.usbmodem1101"
 BAUD_RATE = 115200
 
 # Where to drop captured pieces. Set to an unused board square or
@@ -209,14 +209,14 @@ while not board.is_game_over():
     if cap_sq is not None:
         # Remove captured piece first.
         commands += plan_leg(from_sq, cap_sq)      # travel to captured piece (magnet up)
-        commands += ["ROT_Z +90.00"]               # lower magnet
+        commands += ["ROT_Z +90.00"]               # raise magnet
         commands += plan_leg(cap_sq, CAPTURE_DROP_SQ)  # carry off to drop zone
-        commands += ["ROT_Z -90.00"]               # raise magnet
+        commands += ["ROT_Z -90.00"]               # lower magnet
         commands += plan_leg(CAPTURE_DROP_SQ, from_sq)  # return to mover (magnet up)
 
-    commands += ["ROT_Z +90.00"]              # lower magnet
+    commands += ["ROT_Z +90.00"]              # raise magnet
     commands += plan_leg(from_sq, to_sq)          # magnet carries piece to destination
-    commands += ["ROT_Z -90.00"]              # raise magnet
+    commands += ["ROT_Z -90.00"]              # lower magnet
 
     busy_event.set()
     for line in commands:
@@ -227,7 +227,6 @@ while not board.is_game_over():
     prev_ai_to = to_sq  # remember for next move
 
     # ---- SEND TO ARDUINO ----
-    # Pick a simple, parseable protocol. Example: "MOVE:e7e5\n"
     msg = f"MOVE:{ai_move_uci}\n"
     ser.write(msg.encode("utf-8"))
 
