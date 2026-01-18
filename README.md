@@ -1,3 +1,5 @@
+*McHacks 2026*
+
 # Chess3D
 
 Play chess against an AI on a real, motorized board. You enter a move in the browser, the AI replies, and the machine moves the pieces on the physical board using a magnet and motors.
