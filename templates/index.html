@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Chess Move Input</title>
+    <style>
+      :root {
+        --bg: #f4f4f4;
+        --card: #ffffff;
+        --text: #111111;
+        --border: #000000;
+      }
+      body.night {
+        --bg: #111214;
+        --card: #1b1d20;
+        --text: #f2f2f2;
+        --border: #f2f2f2;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .box {
+        border: 4px solid var(--border);
+        padding: 48px;
+        width: min(92vw, 1100px);
+        min-height: 60vh;
+        background: var(--card);
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 18px;
+      }
+      .layout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 32px;
+        width: 100%;
+      }
+      .panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+      }
+      .board {
+        font-family: "Courier New", monospace;
+        font-size: 22px;
+        line-height: 1.4;
+        border: 2px solid var(--border);
+        padding: 16px 20px;
+        text-align: center;
+        white-space: pre;
+        display: none;
+        min-width: 260px;
+      }
+      .board.show {
+        display: block;
+      }
+      .toggle-board {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+      }
+      input {
+        width: min(80vw, 700px);
+        padding: 18px;
+        font-size: 28px;
+        text-align: center;
+      }
+      button {
+        padding: 16px 28px;
+        font-size: 24px;
+      }
+      .label {
+        display: block;
+        font-size: 24px;
+      }
+      .out {
+        font-family: monospace;
+        font-size: 22px;
+      }
+      .toggle {
+        position: fixed;
+        top: 18px;
+        right: 18px;
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+      .toggle-bar {
+        position: fixed;
+        top: 18px;
+        right: 18px;
+        display: flex;
+        gap: 8px;
+      }
+      .toggle {
+        position: static;
+      }
+      .board-toggle {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toggle-bar">
+      <button class="toggle" id="toggle" type="button">Night mode</button>
+      <button class="board-toggle" id="toggle-board" type="button">Show board</button>
+    </div>
+    <div class="box">
+      <div class="layout">
+        <div class="panel">
+          <form method="post" action="/move">
+            <label class="label" for="move">Your move (UCI):</label>
+            <input id="move" name="move" />
+            <button id="send" type="submit">Send</button>
+          </form>
+          <div class="out">Last move: {{ last_move }}</div>
+          <div class="out">Status: {{ last_status }}</div>
+        </div>
+        <div class="board" id="board"></div>
+      </div>
+    </div>
+    <script>
+      const toggle = document.getElementById("toggle");
+      const sendButton = document.getElementById("send");
+      const moveInput = document.getElementById("move");
+      const showBoard = document.getElementById("toggle-board");
+      const boardEl = document.getElementById("board");
+      const key = "chess-night-mode";
+      const apply = (on) => document.body.classList.toggle("night", on);
+      const saved = localStorage.getItem(key);
+      apply(saved === "1");
+      toggle.textContent = document.body.classList.contains("night")
+        ? "Light mode"
+        : "Night mode";
+      toggle.addEventListener("click", () => {
+        const on = !document.body.classList.contains("night");
+        apply(on);
+        localStorage.setItem(key, on ? "1" : "0");
+        toggle.textContent = on ? "Light mode" : "Night mode";
+      });
+
+      const setBusy = (busy) => {
+        sendButton.disabled = busy;
+        moveInput.disabled = busy;
+        sendButton.textContent = busy ? "Moving..." : "Send";
+      };
+      const pollStatus = async () => {
+        try {
+          const res = await fetch("/status", { cache: "no-store" });
+          if (!res.ok) return;
+          const data = await res.json();
+          setBusy(Boolean(data.busy));
+        } catch (err) {
+          setBusy(false);
+        }
+      };
+      pollStatus();
+      setInterval(pollStatus, 500);
+
+      const boardKey = "chess-show-board";
+      const applyBoard = (on) => {
+        boardEl.classList.toggle("show", on);
+        showBoard.textContent = on ? "Hide board" : "Show board";
+      };
+      applyBoard(localStorage.getItem(boardKey) === "1");
+      showBoard.addEventListener("click", () => {
+        const on = !boardEl.classList.contains("show");
+        applyBoard(on);
+        localStorage.setItem(boardKey, on ? "1" : "0");
+      });
+      const pollBoard = async () => {
+        if (!boardEl.classList.contains("show")) return;
+        try {
+          const res = await fetch("/board", { cache: "no-store" });
+          if (!res.ok) return;
+          const data = await res.json();
+          boardEl.textContent = data.board || "";
+        } catch (err) {
+          boardEl.textContent = "";
+        }
+      };
+      pollBoard();
+      setInterval(pollBoard, 1000);
+    </script>
+  </body>
+</html>
